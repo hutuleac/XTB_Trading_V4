@@ -34,12 +34,25 @@ const Scoring = {
         // Sentiment (max 20) — PCR omitted, only RS
         if (d.rs_spy_30d != null && d.rs_spy_30d > 1.0) score += 10;
 
+        // OBV multi-timeframe alignment (max 10)
+        const obvVals = [d.obv_5d, d.obv_14d, d.obv_30d].filter(v => v != null);
+        if (obvVals.length >= 2) {
+            const positiveCount = obvVals.filter(v => v === "positive").length;
+            const negativeCount = obvVals.filter(v => v === "negative").length;
+            const aligned = Math.max(positiveCount, negativeCount);
+            if (aligned === obvVals.length) score += 10;  // all aligned
+            else if (aligned >= 2) score += 5;            // 2 of 3 aligned
+        }
+
         // Penalties
         if (d.days_to_earnings != null && d.days_to_earnings < 7) score -= 20;
 
         if (d.atr_pct != null && d.atr_pct > 5) score -= 15;
 
         if (d.structure === "Bearish" && d.price && d.ema200 && d.price < d.ema200) score -= 15;
+
+        // Sector ETF conflict: buying bullish stock in a bearish sector
+        if (d.sector_trend === "Bearish" && d.structure === "Bullish") score -= 10;
 
         return Math.max(0, Math.min(100, score));
     },
@@ -116,6 +129,26 @@ const Scoring = {
             pts: 10,
         });
 
+        // OBV multi-timeframe alignment
+        const obvVals2 = [d.obv_5d, d.obv_14d, d.obv_30d].filter(v => v != null);
+        let obvAlignPts = 0, obvAlignMet = false;
+        if (obvVals2.length >= 2) {
+            const pos = obvVals2.filter(v => v === "positive").length;
+            const neg = obvVals2.filter(v => v === "negative").length;
+            const aligned = Math.max(pos, neg);
+            if (aligned === obvVals2.length) { obvAlignPts = 10; obvAlignMet = true; }
+            else if (aligned >= 2) { obvAlignPts = 5; obvAlignMet = true; }
+        }
+        const obvSummary = obvVals2.length > 0
+            ? `5d:${d.obv_5d || "?"} 14d:${d.obv_14d || "?"} 30d:${d.obv_30d || "?"}`
+            : "N/A";
+        items.push({
+            name: "OBV 3-TF aligned",
+            met: obvAlignMet,
+            value: obvSummary,
+            pts: 10,
+        });
+
         // Penalties
         const penalties = [];
         if (d.days_to_earnings != null && d.days_to_earnings < 7) {
@@ -126,6 +159,9 @@ const Scoring = {
         }
         if (d.structure === "Bearish" && d.price && d.ema200 && d.price < d.ema200) {
             penalties.push({ name: "Bearish + below EMA200", pts: -15 });
+        }
+        if (d.sector_trend === "Bearish" && d.structure === "Bullish") {
+            penalties.push({ name: `Sector conflict (${d.sector_etf || "ETF"} Bearish)`, pts: -10 });
         }
 
         return { criteria: items, penalties };

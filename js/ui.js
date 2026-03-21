@@ -355,6 +355,10 @@ const UI = {
         // Summaries
         this.buildSummaries(tickers, marketData);
 
+        // Entry cards & DCA advisor
+        this.renderEntryCards(marketData);
+        this.renderDCAAdvisor(marketData);
+
         // Show dashboard, hide loading
         document.getElementById("loading-section").classList.add("hidden");
         document.getElementById("dashboard-content").classList.remove("hidden");
@@ -408,6 +412,21 @@ const UI = {
 
             const obvLabel = d.obv_trend
                 ? `<span class="${this.obvColor(d.obv_trend)}">${d.obv_trend}</span>`
+                : "-";
+
+            const obvDir = v => {
+                if (v === "positive") return `<span class="text-accent-green">▲</span>`;
+                if (v === "negative") return `<span class="text-accent-red">▼</span>`;
+                if (v === "flat") return `<span class="text-gray-500">─</span>`;
+                return `<span class="text-gray-600">?</span>`;
+            };
+            const obv5Label  = obvDir(d.obv_5d);
+            const obv14Label = obvDir(d.obv_14d);
+            const obv30Label = obvDir(d.obv_30d);
+            const obvMtfLabel = `5d ${obv5Label} · 14d ${obv14Label} · 30d ${obv30Label}`;
+
+            const sectorLabel = d.sector_etf
+                ? `${d.sector_etf} <span class="${this.trendColor(d.sector_trend)}">${d.sector_trend || "N/A"}</span>`
                 : "-";
 
             const fibLabel = d.fib_position
@@ -656,6 +675,8 @@ const UI = {
                     <span class="k">BB-BW</span>     <span class="v">${bbBWLabel}</span>
                     <span class="k">MACD</span>      <span class="v">${macdLabel}</span>
                     <span class="k">OBV</span>       <span class="v">${obvLabel}</span>
+                    <span class="k">OBV MTF</span>   <span class="v">${obvMtfLabel}</span>
+                    <span class="k">Sector</span>    <span class="v">${sectorLabel}</span>
                     <span class="k">Fib</span>       <span class="v">${fibLabel}</span>
                     <span class="k">AVWAP30d</span>  <span class="v">${avwapCtx}</span>
                     <span class="k">RS-SPY</span>    <span class="v">${rsSpyLabel}</span>
@@ -671,6 +692,164 @@ const UI = {
             `;
             container.appendChild(card);
         });
+    },
+
+    // --- Entry Decision Cards (score >= ENTRY_SCORE_THRESHOLD) ---
+    renderEntryCards(marketData) {
+        const section = document.getElementById("entry-cards-section");
+        const container = document.getElementById("entry-cards-container");
+        const countEl = document.getElementById("entry-cards-count");
+        if (!section || !container) return;
+
+        const qualifying = Object.entries(marketData)
+            .filter(([, d]) => d.composite_score >= CONFIG.ENTRY_SCORE_THRESHOLD)
+            .sort(([, a], [, b]) => b.composite_score - a.composite_score);
+
+        if (countEl) countEl.textContent = qualifying.length > 0 ? `(${qualifying.length})` : "";
+
+        if (qualifying.length === 0) {
+            section.classList.add("hidden");
+            return;
+        }
+        section.classList.remove("hidden");
+        container.innerHTML = "";
+
+        for (const [ticker, d] of qualifying) {
+            if (!d.atr || !d.price) continue;
+
+            // Determine entry price (FVG level if within 1.5%, else current price)
+            let entryPrice = d.price;
+            if (d.fvg_type === "BULL" && d.fvg_level != null) {
+                const distPct = Math.abs(d.price - d.fvg_level) / d.price * 100;
+                if (distPct <= 1.5) entryPrice = d.fvg_level;
+            }
+            entryPrice = Math.round(entryPrice * 100) / 100;
+
+            const slDist = Math.round(d.atr * 1.5 * 100) / 100;
+            const sl  = Math.round((entryPrice - slDist) * 100) / 100;
+            const tp1 = Math.round((entryPrice + slDist * 2.0) * 100) / 100;
+            const tp2 = Math.round((entryPrice + slDist * 3.5) * 100) / 100;
+            const rr1 = "1:2.0";
+            const rr2 = "1:3.5";
+
+            // Position size from tiers
+            let posSize = 5;
+            for (const tier of CONFIG.POSITION_SIZE_TIERS) {
+                if (d.composite_score >= tier.min) { posSize = tier.size; break; }
+            }
+
+            const scoreC = d.composite_score >= 85 ? "#22c55e" : "#eab308";
+            const entryNote = d.fvg_type === "BULL" && entryPrice !== d.price
+                ? `<span class="text-gray-500" style="font-size:11px;"> (FVG level)</span>` : "";
+
+            const card = document.createElement("div");
+            card.className = "entry-card";
+            card.innerHTML = `
+                <div class="entry-card-hdr">
+                    <span class="text-white font-bold text-base">${ticker}</span>
+                    <span style="color:${scoreC}; font-weight:700;">LONG · ${d.composite_score}/100</span>
+                </div>
+                <div class="entry-card-grid">
+                    <span class="ek">Entry</span>  <span class="ev">$${this.fmt(entryPrice)}${entryNote}</span>
+                    <span class="ek">Stop Loss</span><span class="ev text-accent-red">$${this.fmt(sl)} <span class="text-gray-500">(1.5× ATR $${this.fmt(d.atr)})</span></span>
+                    <span class="ek">TP1 (${rr1})</span><span class="ev text-accent-green">$${this.fmt(tp1)}</span>
+                    <span class="ek">TP2 (${rr2})</span><span class="ev text-accent-green">$${this.fmt(tp2)}</span>
+                    <span class="ek">Position</span><span class="ev text-accent-yellow">${posSize}% of portfolio</span>
+                </div>
+                <div class="entry-checklist">
+                    <div class="entry-check-label">Execution checklist</div>
+                    <div>→ Wait for daily close above <strong>$${this.fmt(entryPrice)}</strong></div>
+                    <div>→ Set hard stop at <strong>$${this.fmt(sl)}</strong></div>
+                    <div>→ At TP1 ($${this.fmt(tp1)}): close 50%, move SL to breakeven</div>
+                    <div>→ Trail remaining 50% with $${this.fmt(Math.round(d.atr * 0.5 * 100) / 100)} offset toward TP2</div>
+                    <div>→ Cancel if OBV flips negative or sector breaks down</div>
+                    ${d.days_to_earnings != null && d.days_to_earnings <= 14
+                        ? `<div class="text-accent-yellow">⚠ Earnings in ${d.days_to_earnings}d — reduce size or wait</div>` : ""}
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    },
+
+    // --- DCA Accumulation Advisor ---
+    renderDCAAdvisor(marketData) {
+        const section = document.getElementById("dca-section");
+        const container = document.getElementById("dca-container");
+        if (!section || !container) return;
+
+        const candidates = Object.entries(marketData).filter(([, d]) => {
+            if (d.composite_score >= CONFIG.ENTRY_SCORE_THRESHOLD) return false; // already in entry cards
+            if (d.rsi_daily == null || d.atr_pct == null) return false;
+            const rsiOk  = d.rsi_daily >= CONFIG.DCA_RSI_MIN && d.rsi_daily <= CONFIG.DCA_RSI_MAX;
+            const atrOk  = d.atr_pct <= CONFIG.DCA_MAX_ATR_PCT;
+            const obvFlat = d.obv_30d === "flat" || d.obv_30d === "positive" ||
+                            (!d.obv_5d && !d.obv_14d);  // no OBV data = don't filter out
+            return rsiOk || atrOk;  // show if either condition is partially met
+        }).sort(([, a], [, b]) => b.composite_score - a.composite_score);
+
+        if (candidates.length === 0) {
+            section.classList.add("hidden");
+            return;
+        }
+        section.classList.remove("hidden");
+        container.innerHTML = "";
+
+        for (const [ticker, d] of candidates) {
+            if (!d.price || !d.atr) continue;
+
+            // Viability
+            const rsiOk  = d.rsi_daily >= CONFIG.DCA_RSI_MIN && d.rsi_daily <= CONFIG.DCA_RSI_MAX;
+            const atrOk  = d.atr_pct <= CONFIG.DCA_MAX_ATR_PCT;
+            const obvLat = d.obv_30d === "flat" || d.obv_30d == null;
+            let viability, viaBadge;
+            if (rsiOk && atrOk && obvLat) {
+                viability = "ACCUMULATE"; viaBadge = `<span class="text-accent-green font-bold">✅ ACCUMULATE</span>`;
+            } else if (rsiOk || atrOk) {
+                viability = "POSSIBLE"; viaBadge = `<span class="text-accent-yellow font-bold">⚠ POSSIBLE</span>`;
+            } else {
+                viability = "AVOID"; viaBadge = `<span class="text-accent-red font-bold">❌ AVOID</span>`;
+            }
+
+            // Accumulation zone: ATR-based band around current price
+            const atrAbs = d.atr || 0;
+            const zoneHigh = Math.round((d.price + atrAbs) * 100) / 100;
+            const zoneLow  = Math.round((d.price - atrAbs) * 100) / 100;
+            const TRANCHES = 5;
+            const step = (zoneHigh - zoneLow) / (TRANCHES - 1);
+            const tranches = Array.from({ length: TRANCHES }, (_, i) =>
+                Math.round((zoneHigh - i * step) * 100) / 100
+            );
+            const slDca  = Math.round(zoneLow * 0.90 * 100) / 100;
+            const tpDca  = Math.round(zoneHigh * 1.05 * 100) / 100;
+
+            const earnWarn = d.days_to_earnings != null && d.days_to_earnings < 14
+                ? `<div class="text-accent-yellow" style="margin-top:8px; font-size:12px;">⚠ Earnings in ${d.days_to_earnings}d — pause new entries until after report</div>`
+                : "";
+
+            const sectorWarn = d.sector_trend === "Bearish"
+                ? `<div class="text-accent-orange" style="font-size:12px;">⚠ Sector (${d.sector_etf}) is Bearish — reassess thesis</div>`
+                : "";
+
+            const card = document.createElement("div");
+            card.className = "dca-card";
+            card.innerHTML = `
+                <div class="dca-card-hdr">
+                    <span class="text-white font-bold">${ticker}</span>
+                    <span class="text-gray-400 text-xs">$${this.fmt(d.price)} · RSI ${this.fmt(d.rsi_daily, 1)} · ATR% ${this.fmt(d.atr_pct, 2)}%</span>
+                </div>
+                <div style="margin-bottom:8px;">${viaBadge}</div>
+                <div class="dca-grid">
+                    <span class="dk">Zone</span>  <span class="dv">$${this.fmt(zoneLow)} – $${this.fmt(zoneHigh)}</span>
+                    <span class="dk">Tranches</span><span class="dv">${tranches.map(p => `$${this.fmt(p)}`).join(" / ")}</span>
+                    <span class="dk">Stop Loss</span><span class="dv text-accent-red">$${this.fmt(slDca)} (−10% below lower bound)</span>
+                    <span class="dk">Take Profit</span><span class="dv text-accent-green">$${this.fmt(tpDca)} (+5% above upper bound)</span>
+                    <span class="dk">OBV 30d</span><span class="dv">${d.obv_30d || "—"}</span>
+                    <span class="dk">Score</span>  <span class="dv">${d.composite_score}/100</span>
+                </div>
+                ${earnWarn}${sectorWarn}
+            `;
+            container.appendChild(card);
+        }
     },
 
     // --- Macro Indicators Panel ---

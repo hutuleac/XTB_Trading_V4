@@ -93,7 +93,22 @@ const App = {
                 }
             }
 
-            // 3. Process each ticker
+            // 3. Fetch sector ETF data (best-effort, non-blocking)
+            UI.updateLoadingProgress("Fetching sector ETF trends...");
+            const sectors = [...new Set(
+                allResults
+                    .filter(r => r.result.status === "fulfilled" && r.result.value?.profile?.sector)
+                    .map(r => r.result.value.profile.sector)
+            )];
+            const sectorEtfOhlcv = await API.fetchSectorETFs(sectors);
+
+            // Compute structure for each ETF
+            const sectorEtfStructure = {};
+            for (const [etf, ohlcv] of Object.entries(sectorEtfOhlcv)) {
+                sectorEtfStructure[etf] = Structure.calcStructure(ohlcv.highs, ohlcv.lows);
+            }
+
+            // 4. Process each ticker
             UI.updateLoadingProgress("Calculating indicators...");
             const marketData = {};
             const chartData = {};
@@ -107,7 +122,7 @@ const App = {
                     continue;
                 }
                 try {
-                    const processed = this.processTicker(ticker, result.value, spyCloses);
+                    const processed = this.processTicker(ticker, result.value, spyCloses, sectorEtfStructure);
                     marketData[ticker] = processed.data;
                     chartData[ticker] = processed.chart;
                 } catch (e) {
@@ -131,10 +146,10 @@ const App = {
                 console.warn(`${tickerErrors.length} ticker(s) had issues:`, tickerErrors);
             }
 
-            // 4. Save to cache
+            // 5. Save to cache
             setCache({ marketData, chartData, fgData });
 
-            // 5. Render
+            // 6. Render
             const timestamp = new Date().toLocaleString();
             UI.renderDashboard(marketData, chartData, timestamp, null, false, 0, fgData);
 
@@ -147,7 +162,8 @@ const App = {
     /**
      * Process a single ticker: calculate all indicators from raw API data.
      */
-    processTicker(ticker, raw, spyCloses) {
+    processTicker(ticker, raw, spyCloses, sectorEtfStructure) {
+        sectorEtfStructure = sectorEtfStructure || {};
         const ohlcv = raw.ohlcv;
         const profile = raw.profile;
 
@@ -206,7 +222,15 @@ const App = {
         // New indicators
         const macd = Technicals.calcMACD(closes);
         const obv = Technicals.calcOBV(closes, volumes);
+        const obv5d  = Technicals.calcOBVDirection(closes, volumes, CONFIG.OBV_WINDOWS["5d"]);
+        const obv14d = Technicals.calcOBVDirection(closes, volumes, CONFIG.OBV_WINDOWS["14d"]);
+        const obv30d = Technicals.calcOBVDirection(closes, volumes, CONFIG.OBV_WINDOWS["30d"]);
         const pivots = Technicals.calcPivots(highs, lows, closes);
+
+        // Sector ETF context
+        const sector = profile.sector || null;
+        const sectorEtf = sector ? (CONFIG.SECTOR_ETF_MAP[sector] || null) : null;
+        const sectorTrend = sectorEtf ? (sectorEtfStructure[sectorEtf] || null) : null;
 
         // From profile
         const high52w = profile.high_52w;
@@ -250,8 +274,14 @@ const App = {
             macd_hist: macd.hist,
             macd_crossover: macd.crossover,
             obv_trend: obv.obv_trend,
+            obv_5d:  obv5d,
+            obv_14d: obv14d,
+            obv_30d: obv30d,
             pivot_r1: pivots.r1,
             pivot_s1: pivots.s1,
+            // Sector ETF
+            sector_etf:   sectorEtf,
+            sector_trend: sectorTrend,
             // Fundamentals
             pe_trailing: profile.pe_trailing,
             pe_forward: profile.pe_forward,

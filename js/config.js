@@ -47,6 +47,39 @@ const CONFIG = {
     // --- Relative Strength ---
     RS_WINDOW: 30,
 
+    // --- OBV Windows (trading days) ---
+    OBV_WINDOWS: { "5d": 5, "14d": 14, "30d": 30 },
+
+    // --- Sector ETF Map ---
+    SECTOR_ETF_MAP: {
+        "Technology":              "XLK",
+        "Financials":              "XLF",
+        "Energy":                  "XLE",
+        "Health Care":             "XLV",
+        "Consumer Discretionary":  "XLY",
+        "Utilities":               "XLU",
+        "Materials":               "XLB",
+        "Industrials":             "XLI",
+        "Real Estate":             "XLRE",
+        "Communication Services":  "XLC",
+        "Consumer Staples":        "XLP",
+    },
+
+    // --- Entry Card Thresholds ---
+    ENTRY_SCORE_THRESHOLD: 75,
+    POSITION_SIZE_TIERS: [
+        { min: 95, size: 15 },
+        { min: 90, size: 12 },
+        { min: 85, size: 10 },
+        { min: 80, size: 8  },
+        { min: 75, size: 5  },
+    ],
+
+    // --- DCA Advisor Thresholds ---
+    DCA_MAX_ATR_PCT: 2.0,
+    DCA_RSI_MIN: 35,
+    DCA_RSI_MAX: 65,
+
     // --- Chart ---
     CHART_DAYS: 90,
 

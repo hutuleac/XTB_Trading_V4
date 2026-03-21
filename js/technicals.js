@@ -427,6 +427,32 @@ const Technicals = {
     },
 
     /**
+     * Calculate OBV direction over a fixed window (days).
+     * Returns "positive" | "negative" | "flat"
+     * Used for multi-timeframe OBV alignment (5d / 14d / 30d).
+     */
+    calcOBVDirection(closes, volumes, days) {
+        if (!closes || !volumes || closes.length < days + 1) return "flat";
+        const startIdx = Math.max(0, closes.length - days - 1);
+        const c = closes.slice(startIdx);
+        const v = volumes.slice(startIdx);
+
+        let obv = 0;
+        const startObv = 0;
+        for (let i = 1; i < c.length; i++) {
+            if (c[i] > c[i - 1]) obv += v[i];
+            else if (c[i] < c[i - 1]) obv -= v[i];
+        }
+
+        // Threshold: 2% of absolute cumulative volume to avoid noise
+        const totalVol = v.reduce((s, x) => s + Math.abs(x), 0);
+        const threshold = totalVol * 0.02;
+        if (obv > threshold) return "positive";
+        if (obv < -threshold) return "negative";
+        return "flat";
+    },
+
+    /**
      * Calculate daily pivot points (S1, Pivot, R1) from previous day's OHLC.
      * Returns { pivot, r1, s1 }
      */

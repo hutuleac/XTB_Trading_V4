@@ -203,6 +203,45 @@ const API = {
         return (ohlcvBatch && ohlcvBatch[CONFIG.BENCHMARK]) || [];
     },
 
+    // ── Fetch sector ETF OHLCV for structure detection ───────
+    // Fetches unique ETF symbols derived from the sectors in the watchlist.
+    // Returns { XLK: { closes, highs, lows }, XLF: {...}, ... }
+    async fetchSectorETFs(sectors) {
+        const etfSet = new Set();
+        for (const sector of sectors) {
+            const etf = CONFIG.SECTOR_ETF_MAP[sector];
+            if (etf) etfSet.add(etf);
+        }
+        const etfSymbols = [...etfSet];
+        if (etfSymbols.length === 0) return {};
+
+        try {
+            console.log(`[Sector ETFs] Fetching: ${etfSymbols.join(", ")}`);
+            const data = await this.twelveDataGet("/time_series", {
+                symbol: etfSymbols.join(","),
+                interval: "1day",
+                outputsize: "60",  // 60 days enough for structure detection
+            });
+
+            const parsed = this._parseTwelveDataResponse(data, etfSymbols);
+            const result = {};
+            for (const sym of etfSymbols) {
+                const ohlcv = parsed[sym] || [];
+                if (ohlcv.length === 0) continue;
+                result[sym] = {
+                    closes: ohlcv.map(d => d.close),
+                    highs:  ohlcv.map(d => d.high),
+                    lows:   ohlcv.map(d => d.low),
+                };
+            }
+            console.log(`[Sector ETFs] Parsed: ${Object.keys(result).join(", ")}`);
+            return result;
+        } catch (e) {
+            console.warn("[Sector ETFs] Fetch failed:", e.message);
+            return {};
+        }
+    },
+
     // ── VIX from Yahoo Finance (fallback when TD VIX is unavailable) ─────
     async fetchVIX() {
         try {
