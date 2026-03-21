@@ -10,6 +10,9 @@ BACKEND_PLAN.md
 .DS_Store
 Thumbs.db
 
+# Claude Code local config
+.claude/
+
 # Editor
 .vscode/
 .idea/
