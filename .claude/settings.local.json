@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \" import json with open\\(r''C:\\\\Users\\\\Peter\\\\.claude\\\\projects\\\\C--Users-Peter-Desktop-XTB-Trading-V3-1-0-main-XTB-Trading-V3-1-0-main\\\\f2c37415-822e-4e61-bb71-2b7027962a1e\\\\tool-results\\\\toolu_01Ez5TU1kQrnASaCU87rBMNM.json'', ''r'', encoding=''utf-8''\\) as f: data = json.load\\(f\\) print\\(data[0][''text'']\\) \")",
+      "Bash(python3 -c \":*)",
+      "WebFetch(domain:production.dataviz.cnn.io)",
+      "WebFetch(domain:edition.cnn.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:freshprinceofstandarderror.com)",
+      "WebFetch(domain:supertype.ai)"
+    ]
+  }
+}
