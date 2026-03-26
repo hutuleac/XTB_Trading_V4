@@ -191,7 +191,7 @@ const UI = {
         const prev = fgData.prev_close != null
             ? ` <span style="font-size:10px; opacity:0.65;">prev ${fgData.prev_close}</span>`
             : "";
-        el.innerHTML = `<span title="CNN Fear &amp; Greed Index — 0 = Extreme Fear · 100 = Extreme Greed">F&amp;G: ${s} <span style="font-size:11px; opacity:0.8;">${fgData.rating}</span>${prev}</span>`;
+        el.innerHTML = `<span title="CNN Fear &amp; Greed Index — 0 = Extreme Fear · 100 = Extreme Greed">F&amp;G: ${s} <span style="font-size:11px; opacity:0.8;">${fgData.rating || ""}</span>${prev}</span>`;
         el.className = `px-3 py-1 rounded text-sm ${cls}`;
     },
 
@@ -366,6 +366,7 @@ const UI = {
 
     buildSummaries(tickers, marketData) {
         const container = document.getElementById("summary-container");
+        if (!container) return;
         container.innerHTML = "";
 
         tickers.forEach(ticker => {
@@ -784,7 +785,7 @@ const UI = {
             const atrOk  = d.atr_pct <= CONFIG.DCA_MAX_ATR_PCT;
             const obvFlat = d.obv_30d === "flat" || d.obv_30d === "positive" ||
                             (!d.obv_5d && !d.obv_14d);  // no OBV data = don't filter out
-            return rsiOk || atrOk;  // show if either condition is partially met
+            return rsiOk && atrOk;  // require both conditions
         }).sort(([, a], [, b]) => b.composite_score - a.composite_score);
 
         if (candidates.length === 0) {

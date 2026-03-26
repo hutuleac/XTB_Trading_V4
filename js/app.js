@@ -20,11 +20,14 @@ const App = {
         if (cache && cache.marketData && cache.chartData) {
             const ageMs = Date.now() - new Date(cache.timestamp).getTime();
             const ageHours = ageMs / 3600000;
-            UI.renderDashboard(cache.marketData, cache.chartData, cache.timestamp, null, true, ageHours, null);
-            return;
+            if (ageHours <= CONFIG.CACHE_TTL_HOURS) {
+                UI.renderDashboard(cache.marketData, cache.chartData, cache.timestamp, null, true, ageHours, null);
+                return;
+            }
+            // Cache is stale — fall through to full refresh
         }
 
-        // No cache — do a full fresh load
+        // No cache or stale cache — do a full fresh load
         await App.refreshData();
     },
 
@@ -165,6 +168,8 @@ const App = {
     processTicker(ticker, raw, spyCloses, sectorEtfStructure) {
         sectorEtfStructure = sectorEtfStructure || {};
         const ohlcv = raw.ohlcv;
+        if (!Array.isArray(ohlcv) || ohlcv.length < 2)
+            throw new Error(`Insufficient OHLCV data for ${ticker} (${Array.isArray(ohlcv) ? ohlcv.length : 0} candles)`);
         const profile = raw.profile;
 
         // Extract arrays

@@ -25,10 +25,15 @@
         th { position: sticky; top: 0; z-index: 10; }
         .chart-panel { transition: max-height 0.3s ease, opacity 0.3s ease; max-height: 0; opacity: 0; overflow: hidden; }
         .chart-panel.open { max-height: 1200px; opacity: 1; }
+        @media (max-width: 639px) { .chart-panel.open { max-height: 500px; } }
         .score-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 46px;
                        padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 16px; cursor: help; position: relative; }
         .setup-badge { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 6px;
                        font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; position: relative; }
+        @media (max-width: 639px) {
+            .score-badge { font-size: 12px; padding: 2px 6px; min-width: 34px; }
+            .setup-badge { font-size: 11px; padding: 2px 7px; letter-spacing: 0; }
+        }
         tr.ticker-row { cursor: pointer; transition: background 0.15s; }
         tr.ticker-row:hover { background: #1e2231 !important; }
         .cell-val { font-variant-numeric: tabular-nums; }
@@ -49,6 +54,10 @@
             pointer-events: none;
         }
         .tip:hover .tiptext { visibility: visible; opacity: 1; }
+        .tip.tip-active .tiptext { visibility: visible; opacity: 1; }
+        @media (max-width: 639px) {
+            .tip .tiptext { white-space: normal; width: 220px; max-width: 80vw; }
+        }
         .tip-down .tiptext { bottom: auto !important; top: calc(100% + 8px); }
         .tiptext .tip-row { display: flex; gap: 8px; align-items: center; }
         .tiptext .met { color: #22c55e; }
@@ -117,6 +126,7 @@
             grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
             gap: 0 16px;
         }
+        @media (max-width: 639px) { .param-grid { grid-template-columns: 1fr; } }
         .param-row {
             display: flex; gap: 8px; padding: 5px 0;
             border-bottom: 1px solid #1e2231; font-size: 13px; align-items: baseline;
@@ -130,6 +140,7 @@
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 12px;
         }
+        @media (max-width: 639px) { .analysis-grid { grid-template-columns: 1fr; } }
         .analysis-card {
             background: #161922; border: 1px solid #282d3e; border-radius: 10px; padding: 14px 16px;
         }
@@ -157,6 +168,7 @@
             padding: 32px 40px; max-width: 560px; width: 90%;
             max-height: 90vh; overflow-y: auto;
         }
+        @media (max-width: 639px) { .overlay-card { padding: 20px 16px; } }
         .overlay-card h2 { font-size: 24px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
         .overlay-card p { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
         .overlay-card label { display: block; font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
@@ -179,6 +191,7 @@
             transition: background 0.15s;
         }
         .btn-secondary:hover { background: #3b4260; color: #e2e8f0; }
+        @media (max-width: 639px) { .btn-secondary { min-height: 44px; } }
 
         /* Loading spinner */
         .spinner {
@@ -308,13 +321,13 @@
         <div id="cache-banner" class="hidden"></div>
 
         <!-- HEADER -->
-        <header class="border-b border-gray-800 px-6 py-4">
-            <div class="flex items-center justify-between max-w-[1600px] mx-auto">
+        <header class="border-b border-gray-800 px-4 sm:px-6 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-y-2 max-w-[1600px] mx-auto">
                 <div>
-                    <h1 class="text-2xl font-bold text-white">📊 Stock Market Dashboard</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white">📊 Stock Market Dashboard</h1>
                     <p class="text-base text-gray-400 mt-0.5" id="header-timestamp"></p>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                     <a href="https://finance.yahoo.com/quote/%5EVIX" target="_blank" rel="noopener noreferrer"
                        class="btn-secondary" style="padding:6px 14px; font-size:13px; text-decoration:none;"
                        title="CBOE VIX Volatility Index — opens Yahoo Finance in new tab">📈 VIX ↗</a>
@@ -330,9 +343,10 @@
         </header>
 
         <!-- MAIN CONTENT -->
-        <main class="px-4 py-4 max-w-[1600px] mx-auto">
+        <main class="px-2 sm:px-4 py-4 max-w-[1600px] mx-auto">
             <!-- PRIMARY TABLE -->
             <div class="rounded-lg border border-gray-800 bg-surface-800">
+                <div style="overflow-x: auto;">
                 <table class="text-sm">
                     <thead>
                         <tr class="text-gray-400 bg-surface-900">
@@ -350,6 +364,7 @@
                     </thead>
                     <tbody id="table-body"></tbody>
                 </table>
+                </div>
             </div>
 
             <!-- SECONDARY TABLE -->
@@ -577,6 +592,23 @@
         }
         // Fallback: also run after a short delay on load
         window.addEventListener('load', () => setTimeout(attachHeaderTips, 500));
+
+        // Touch tooltip toggle — makes .tip elements work on mobile (no hover)
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.tip').forEach(tip => {
+                tip.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.tip.tip-active').forEach(el => {
+                        if (el !== tip) el.classList.remove('tip-active');
+                    });
+                    tip.classList.toggle('tip-active');
+                }, { passive: false });
+            });
+            document.addEventListener('touchstart', (e) => {
+                if (!e.target.closest('.tip'))
+                    document.querySelectorAll('.tip.tip-active').forEach(el => el.classList.remove('tip-active'));
+            });
+        });
     })();
     </script>
 

@@ -6,6 +6,7 @@
 
 const Charts = {
     activeCharts: {},
+    _resizeHandlers: {},
 
     toggleChart(ticker, marketData, chartData) {
         const panel = document.getElementById(`chart-panel-${ticker}`);
@@ -14,7 +15,13 @@ const Charts = {
         if (panel.classList.contains("open")) {
             panel.classList.remove("open");
             if (this.activeCharts[ticker]) {
-                this.activeCharts[ticker].forEach(c => c.remove());
+                if (this._resizeHandlers[ticker]) {
+                    window.removeEventListener("resize", this._resizeHandlers[ticker]);
+                    delete this._resizeHandlers[ticker];
+                }
+                this.activeCharts[ticker].forEach(c => {
+                    if (c && typeof c.remove === "function") c.remove();
+                });
                 delete this.activeCharts[ticker];
             }
             panel.innerHTML = "";
@@ -30,6 +37,10 @@ const Charts = {
             return;
         }
 
+        const isMobile = window.innerWidth < 640;
+        const priceH = isMobile ? 260 : 450;
+        const subH   = isMobile ? 100 : 130;
+
         container.innerHTML = `
             <div class="p-4">
                 <div class="flex items-center gap-4 mb-3">
@@ -41,10 +52,10 @@ const Charts = {
                 </div>
                 <div class="flex flex-col gap-1">
                     <div class="chart-wrap">
-                        <div id="price-chart-${ticker}" style="height: 450px;"></div>
+                        <div id="price-chart-${ticker}" style="height: ${priceH}px;"></div>
                         <div class="ohlcv-legend" id="ohlcv-legend-${ticker}"></div>
                     </div>
-                    <div id="volrsi-chart-${ticker}" style="height: 130px;"></div>
+                    <div id="volrsi-chart-${ticker}" style="height: ${subH}px;"></div>
                 </div>
             </div>
         `;
@@ -219,5 +230,15 @@ const Charts = {
         });
 
         this.activeCharts[ticker] = charts;
+
+        // Resize handler — reflow charts on window resize / device rotation
+        const resizeHandler = () => {
+            const priceEl = container.querySelector(`#price-chart-${ticker}`);
+            if (!priceEl) return;
+            const w = priceEl.clientWidth;
+            if (w > 0) charts.forEach(c => c.applyOptions({ width: w }));
+        };
+        window.addEventListener("resize", resizeHandler);
+        this._resizeHandlers[ticker] = resizeHandler;
     },
 };

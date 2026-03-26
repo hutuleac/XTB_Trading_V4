@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-XTB Trading Dashboard (v4.0.0) is a fully client-side stock analysis tool. No build step, no bundler, no backend. Pure HTML + JavaScript served as static files. All indicator math runs in the browser. Two external APIs provide data: **Finnhub** (quotes, fundamentals) and **Twelve Data** (OHLCV history).
+XTB Trading Dashboard (v4.0.0) is a fully client-side stock analysis tool. No build step, no bundler, no backend. Pure HTML + JavaScript served as static files. All indicator math runs in the browser. Three external sources provide data: **Finnhub** (quotes, fundamentals), **Twelve Data** (OHLCV history), and public endpoints for **VIX** and **Fear & Greed index** (used in the dashboard header).
+
+> Reference docs: `ARCHITECTURE.md` (deep-dive), `STOCKS_DASHBOARD_BLUEPRINT.md` (original design spec). `index.html` is 44 KB — it contains the full Tailwind config, custom CSS, and all markup inline.
 
 ---
 
@@ -38,7 +40,7 @@ There are no tests, no linter config, and no build commands.
 | `js/technicals.js` | Pure math functions (`calc*`) — RSI, ATR, EMA, AVWAP, POC, ADX, BB, Fibonacci, MACD, OBV, RS vs SPY |
 | `js/structure.js` | Market structure (HH/HL vs LH/LL), liquidity sweep detection, Fair Value Gap detection |
 | `js/scoring.js` | `calcCompositeScore()` — assembles score from technicals/fundamentals/sentiment + penalties, sets `setup_type` and `position_sizing_pct` |
-| `js/ui.js` | DOM rendering, color/format helpers, tooltip generation. Holds `_marketData` and `_chartData` module state |
+| `js/ui.js` | DOM rendering, color/format helpers, tooltip generation. Holds `_marketData` and `_chartData` module state. Renders three sections: dashboard table, Entry Cards (`renderEntryCards`), DCA Advisor (`renderDCAAdvisor`) |
 | `js/charts.js` | Lightweight Charts integration — candlestick, EMA/AVWAP/POC overlays, sweep & FVG markers, screenshot |
 
 ### Data Flow
@@ -75,6 +77,10 @@ app.js: validate keys
 **Fetch new data from an API** → `js/api.js` (add fetch function) → call from `app.js` `processTicker()`
 
 **Change what displays in the dashboard table** → `js/ui.js` `renderDashboard()`
+
+**Adjust DCA Advisor filters** → `js/config.js` (`DCA_MAX_ATR_PCT`, `DCA_RSI_MIN`) + `js/ui.js` `renderDCAAdvisor()`
+
+**Change chart display window** → `js/config.js` `CHART_DAYS` (default 90 trading days)
 
 ---
 
