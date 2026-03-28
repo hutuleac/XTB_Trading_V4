@@ -1,8 +1,8 @@
-# XTB Trading Dashboard — v4.0.0
+# XTB Trading Dashboard — v4.0.1
 
 > Real-time S&P 500 stock analysis in your browser. 20+ technical indicators, composite scoring, and actionable LONG / SHORT / WAIT signals — no server, no build step.
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue) ![No Build](https://img.shields.io/badge/build-none-brightgreen) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![Version](https://img.shields.io/badge/version-4.0.1-blue) ![No Build](https://img.shields.io/badge/build-none-brightgreen) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
 
@@ -258,11 +258,20 @@ This project uses semantic versioning: `v{major}.{minor}.{patch}`
 
 The README version always matches the dashboard version. When the app version is updated in `js/config.js`, the README badge and heading should be updated in the same commit.
 
-**Current version: v4.0.0** (2026-03-21)
+**Current version: v4.0.1** (2026-03-28)
 
 ---
 
 ## Changelog
+
+### v4.0.1 — 2026-03-28
+- Fixed DCA Accumulation section disappearing (restored `||` filter logic, regression from v3.2.5)
+- Removed Short Ratio, Target↑%, and Analyst Action columns — not available on Finnhub free tier
+- Removed Short and Target↑ from Analysis per ticker (same free-tier limitation)
+- Fixed Score badge tooltip clipping for rows 3+ — extended `position:fixed` floater to `td` cells
+- Fixed double tooltip on Score badge — native `.tiptext` now suppressed in `td` cells
+- Added color coding (green/gray/red) to Score breakdown in the tooltip floater
+- Version numbers unified across `index.html`, `config.js`, and `README.md`
 
 ### v4.0.0 — 2026-03-21
 - Migrated data sources from Financial Modeling Prep to **Finnhub + Twelve Data**
