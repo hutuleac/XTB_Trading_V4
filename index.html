@@ -94,10 +94,10 @@
         }
         .screenshot-btn:hover { background: #3b4260; color: #e2e8f0; }
 
-        /* ── Header tooltips — rendered by JS floater (position:fixed)
+        /* ── Header + cell tooltips — rendered by JS floater (position:fixed)
            This bypasses overflow-x:auto clipping on the detail table.
-           The native .tiptext inside <th> is hidden; JS copies its content. */
-        th .tiptext { display: none !important; }
+           The native .tiptext inside <th> and <td> is hidden; JS copies its content. */
+        th .tiptext, td span.tip .tiptext { display: none !important; }
         /* Shared floater styles (JS sets position) */
         #th-tip-floater {
             position: fixed; z-index: 9999; display: none;
@@ -106,6 +106,11 @@
             color: #cbd5e1; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
             max-width: 340px; white-space: normal; pointer-events: none;
         }
+        /* Color coding for score breakdown inside the floater */
+        #th-tip-floater .tip-row { display: flex; gap: 8px; align-items: center; }
+        #th-tip-floater .met { color: #22c55e; }
+        #th-tip-floater .not-met { color: #6b7280; }
+        #th-tip-floater .penalty { color: #ef4444; }
         .ci { display: inline-block; transition: transform 0.2s; }
         .ci.rotated { transform: rotate(-90deg); }
 
