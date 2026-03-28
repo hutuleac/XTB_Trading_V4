@@ -783,9 +783,7 @@ const UI = {
             if (d.rsi_daily == null || d.atr_pct == null) return false;
             const rsiOk  = d.rsi_daily >= CONFIG.DCA_RSI_MIN && d.rsi_daily <= CONFIG.DCA_RSI_MAX;
             const atrOk  = d.atr_pct <= CONFIG.DCA_MAX_ATR_PCT;
-            const obvFlat = d.obv_30d === "flat" || d.obv_30d === "positive" ||
-                            (!d.obv_5d && !d.obv_14d);  // no OBV data = don't filter out
-            return rsiOk && atrOk;  // require both conditions
+            return rsiOk || atrOk;
         }).sort(([, a], [, b]) => b.composite_score - a.composite_score);
 
         if (candidates.length === 0) {
