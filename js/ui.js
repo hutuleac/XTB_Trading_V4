@@ -433,16 +433,8 @@ const UI = {
                 ? `${this.fmt(d.vol_avg_ratio,1)}x <span class="text-gray-500">${d.vol_avg_ratio > 1.5 ? "(high)" : d.vol_avg_ratio < 0.7 ? "(low)" : "(normal)"}</span>`
                 : "-";
 
-            const shortLabel = d.short_ratio != null
-                ? `<span class="${this.shortColor(d.short_ratio)}">${this.fmt(d.short_ratio,1)}d ${d.short_ratio > 10 ? "🔥 Squeeze" : d.short_ratio > 5 ? "elevated" : ""}</span>`
-                : "-";
-
             const epsLabel = d.eps_growth_yoy != null
                 ? `<span class="${d.eps_growth_yoy > 0 ? "text-accent-green" : "text-accent-red"}">${this.fmtEpsGrowth(d.eps_growth_yoy)}</span>`
-                : "-";
-
-            const targetLabel = d.price_target_upside != null
-                ? `<span class="${this.targetUpsideColor(d.price_target_upside)}">${d.price_target_upside > 0 ? "+" : ""}${this.fmt(d.price_target_upside,1)}%</span>`
                 : "-";
 
             const ratingLabel = d.analyst_rating
@@ -669,9 +661,7 @@ const UI = {
                     <span class="k">AVWAP30d</span>  <span class="v">${avwapCtx}</span>
                     <span class="k">RS-SPY</span>    <span class="v">${rsSpyLabel}</span>
                     <span class="k">Vol/Avg</span>   <span class="v">${volAvgLabel}</span>
-                    <span class="k">Short</span>     <span class="v">${shortLabel}</span>
                     <span class="k">EPS YoY</span>   <span class="v">${epsLabel}</span>
-                    <span class="k">Target↑</span>   <span class="v">${targetLabel}</span>
                     <span class="k">Rating</span>    <span class="v">${ratingLabel}</span>
                     ${d.latest_analyst_action ? `<span class="k">Analyst</span><span class="v text-gray-400" style="font-size:11px;">${d.latest_analyst_action}</span>` : ""}
                 </div>
