@@ -310,16 +310,6 @@ const UI = {
                 ? `<span class="text-accent-red">${this.fmt(d.pivot_r1)}</span><span class="text-gray-500"> / </span><span class="text-accent-green">${this.fmt(d.pivot_s1)}</span>`
                 : "-";
 
-            // Price target upside display
-            const targetDisp = d.price_target_upside != null
-                ? `<span class="${this.targetUpsideColor(d.price_target_upside)}">${d.price_target_upside > 0 ? "+" : ""}${this.fmt(d.price_target_upside, 1)}%</span>`
-                : "-";
-
-            // Analyst action display (truncate)
-            const actionDisp = d.latest_analyst_action
-                ? `<span class="text-gray-300" title="${d.latest_analyst_action}">${d.latest_analyst_action.slice(0, 22)}</span>`
-                : "-";
-
             // Detail row
             const detRow = document.createElement("tr");
             detRow.className = `${bgClass} border-b border-gray-800/50`;
@@ -341,13 +331,10 @@ const UI = {
                 <td class="px-2 py-2.5 text-right cell-val">${this.fmt(d.pe_trailing, 1)}</td>
                 <td class="px-2 py-2.5 text-right cell-val">${this.fmt(d.pe_forward, 1)}</td>
                 <td class="px-2 py-2.5 text-right cell-val">${this.fmtEpsGrowth(d.eps_growth_yoy)}</td>
-                <td class="px-2 py-2.5 text-right cell-val tip ${this.shortColor(d.short_ratio)}">${d.short_ratio != null ? this.fmt(d.short_ratio, 1) + "d" : "-"}<span class="tiptext">Days to cover. &gt;5 = elevated, &gt;10 = squeeze territory</span></td>
                 <td class="px-2 py-2.5 text-right cell-val">${this.fmt(d.beta, 2)}</td>
                 <td class="px-2 py-2.5 text-center">${macdDisp}</td>
                 <td class="px-2 py-2.5 text-center">${obvDisp}</td>
                 <td class="px-2 py-2.5 text-center text-[12px]">${pivotDisp}</td>
-                <td class="px-2 py-2.5 text-right cell-val">${targetDisp}</td>
-                <td class="px-2 py-2.5 text-left text-[12px]">${actionDisp}</td>
             `;
             detailBody.appendChild(detRow);
         });

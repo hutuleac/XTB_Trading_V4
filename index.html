@@ -393,13 +393,10 @@
                                 <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">P/E<span class="tiptext">Trailing Price/Earnings ratio (TTM — Trailing Twelve Months). Lower = potentially cheaper relative to earnings. Needs sector context.</span></span></th>
                                 <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">Fwd P/E<span class="tiptext">Forward P/E using consensus estimated next-year earnings. Lower than P/E = earnings growth expected. Higher = growth slowdown priced in.</span></span></th>
                                 <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">EPS-G<span class="tiptext">EPS (Earnings Per Share) Growth Year-over-Year. Measures earnings acceleration. Positive = growing profits. Negative = earnings declining.</span></span></th>
-                                <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">Short Ratio<span class="tiptext">Days-to-cover short interest. Time needed to cover all short positions at avg daily volume. &gt;5d = Elevated · &gt;10d = Short squeeze territory.</span></span></th>
                                 <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">Beta<span class="tiptext">Price sensitivity vs S&amp;P 500. &gt;1 = Amplified market moves (higher risk/reward). &lt;1 = Muted moves (more defensive). 1.0 = Moves with market.</span></span></th>
                                 <th class="px-2 py-2.5 text-center font-medium bg-surface-900"><span class="tip tip-down">MACD<span class="tiptext">MACD (12,26,9). ↑ = Bullish crossover (MACD line crossed above signal — buy signal). ↓ = Bearish crossover. Number = MACD line value. Color = histogram direction.</span></span></th>
                                 <th class="px-2 py-2.5 text-center font-medium bg-surface-900"><span class="tip tip-down">OBV<span class="tiptext">On-Balance Volume trend (20-day regression). UP = Volume confirms price rise (accumulation — smart money buying). DOWN = Distribution. FLAT = no conviction.</span></span></th>
                                 <th class="px-2 py-2.5 text-center font-medium bg-surface-900"><span class="tip tip-down">R1 / S1<span class="tiptext">Daily Pivot Points. R1 (red) = First resistance level above pivot. S1 (green) = First support level below pivot. Calculated from previous day's High, Low, Close.</span></span></th>
-                                <th class="px-2 py-2.5 text-right font-medium bg-surface-900"><span class="tip tip-down">Target↑%<span class="tiptext">Analyst consensus price target upside %. Positive = analyst target is above current price. &gt;15% = Significant upside potential according to Wall Street.</span></span></th>
-                                <th class="px-2 py-2.5 text-left font-medium bg-surface-900"><span class="tip tip-down">Analyst Action<span class="tiptext">Latest analyst upgrade or downgrade action. Format: Firm name + action direction + grade assigned. Most recent event from Finnhub data.</span></span></th>
                             </tr>
                         </thead>
                         <tbody id="detail-table-body"></tbody>
@@ -426,7 +423,6 @@
                     <div class="legend-item">ADX &gt;30 = Strong trend &nbsp;|&nbsp; &lt;20 = Ranging</div>
                     <div class="legend-item">Earnings &lt;7d = Danger zone &nbsp;|&nbsp; &gt;21d = Safe</div>
                     <div class="legend-item">RS-SPY &gt;1.0 = Outperforming market</div>
-                    <div class="legend-item">Short Ratio &gt;5d = Elevated &nbsp;|&nbsp; &gt;10d = Squeeze</div>
                     <div class="legend-item">VIX &lt;15 = Low fear &nbsp;|&nbsp; &gt;30 = High fear</div>
                 </div>
                 <div class="legend-box-sm">
@@ -475,13 +471,10 @@
                         <div class="param-row"><span class="param-name">P/E</span><span class="param-desc">Trailing price/earnings ratio (TTM). Compare within same sector.</span></div>
                         <div class="param-row"><span class="param-name">Fwd P/E</span><span class="param-desc">Forward P/E on estimated next-year earnings. Lower than P/E = growth expected.</span></div>
                         <div class="param-row"><span class="param-name">EPS-G</span><span class="param-desc">EPS (Earnings Per Share) growth year-over-year. Positive = growing earnings.</span></div>
-                        <div class="param-row"><span class="param-name">Short Ratio</span><span class="param-desc">Days-to-cover short positions. &gt;5d elevated. &gt;10d = short squeeze territory.</span></div>
                         <div class="param-row"><span class="param-name">Beta</span><span class="param-desc">Market sensitivity vs S&amp;P 500. &gt;1 amplified moves. &lt;1 more stable.</span></div>
                         <div class="param-row"><span class="param-name">MACD</span><span class="param-desc">MACD (12,26,9). ↑ bullish crossover. ↓ bearish. Value = MACD line.</span></div>
                         <div class="param-row"><span class="param-name">OBV</span><span class="param-desc">On-Balance Volume. UP = accumulation. DOWN = distribution. FLAT = no conviction.</span></div>
                         <div class="param-row"><span class="param-name">R1 / S1</span><span class="param-desc">Daily pivot points. R1 = first resistance (red). S1 = first support (green).</span></div>
-                        <div class="param-row"><span class="param-name">Target↑%</span><span class="param-desc">Analyst consensus price target upside %. &gt;15% = significant Wall Street upside.</span></div>
-                        <div class="param-row"><span class="param-name">Analyst Action</span><span class="param-desc">Latest analyst upgrade/downgrade. Firm name + direction + grade.</span></div>
                     </div>
                 </div>
             </div>
@@ -579,6 +572,18 @@
             });
         }
 
+        // Attach fixed floater to score badge tooltips in td cells (dynamically rendered)
+        function attachCellTips() {
+            document.querySelectorAll('td span.tip').forEach(tip => {
+                if (tip._cellTipBound) return;
+                tip._cellTipBound = true;
+                const tiptext = tip.querySelector('.tiptext');
+                if (!tiptext) return;
+                tip.addEventListener('mouseenter', () => showFloater(tiptext, tip));
+                tip.addEventListener('mouseleave', () => { floater.style.display = 'none'; });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', attachHeaderTips);
 
         // Re-attach after dashboard renders (renderDashboard adds no new th,
@@ -588,10 +593,11 @@
             UI.renderDashboard = function (...args) {
                 origRender(...args);
                 attachHeaderTips();
+                attachCellTips();
             };
         }
         // Fallback: also run after a short delay on load
-        window.addEventListener('load', () => setTimeout(attachHeaderTips, 500));
+        window.addEventListener('load', () => setTimeout(() => { attachHeaderTips(); attachCellTips(); }, 500));
 
         // Touch tooltip toggle — makes .tip elements work on mobile (no hover)
         window.addEventListener('load', () => {
